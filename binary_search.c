@@ -17,7 +17,6 @@ binary_search(int elem, int* arr, size_t arr_len)
       index /= 2;
     if (elem > arr[index])
       index = (arr_len + index + 1) / 2;
-    printf("%d\n", index);
   }
   return index;
 }
