@@ -9,6 +9,13 @@ swap(int* x, int* y)
   *y = temp;
 }
 
+/*
+This function sorts the array in the flowing way
+elements lower than the pivot, then the pivot,
+then elements greater than or equal to the pivot
+The pivot is taken to be the first element.
+The index at which the pivot ends up is returned.
+*/
 size_t
 sort_pivot(int* arr, size_t arr_len)
 {
@@ -26,6 +33,12 @@ sort_pivot(int* arr, size_t arr_len)
   return pivot;
 }
 
+/*
+This function applies the quicksort algorithm:
+Call sort_pivot on the array, then call it again
+on the elements less than the pivot and on the
+elements less than the pivot.
+*/
 void
 quicksort(int* arr, size_t arr_len)
 {
