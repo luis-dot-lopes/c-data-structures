@@ -10,3 +10,4 @@ Data structures implemented so far:
 
 Algorithms implemented:
 - Quicksort
+- Binary Search
