@@ -16,3 +16,5 @@ Algorithms implemented:
 
 - Quicksort
 - Binary Search
+- Insertion Sort
+- Selection Sort
