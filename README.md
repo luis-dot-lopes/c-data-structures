@@ -11,6 +11,8 @@ Data structures implemented so far:
 - Doubly linked list
 - Unrolled linked list
 - Dynamic array
+- Stack
+- Binary Search Tree
 
 Algorithms implemented:
 
