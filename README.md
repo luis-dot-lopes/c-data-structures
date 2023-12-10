@@ -20,3 +20,5 @@ Algorithms implemented:
 - Binary Search
 - Insertion Sort
 - Selection Sort
+- Heapsort
+
