@@ -117,5 +117,7 @@ main(void)
     EndDrawing();
   }
 
+  delete_tree(tree);
+
   return 0;
 }
