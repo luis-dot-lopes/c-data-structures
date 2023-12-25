@@ -13,6 +13,7 @@ Data structures implemented so far:
 - Dynamic array
 - Stack
 - Binary Search Tree
+- Red-Black Tree
 
 Algorithms implemented:
 
@@ -21,4 +22,3 @@ Algorithms implemented:
 - Insertion Sort
 - Selection Sort
 - Heapsort
-
