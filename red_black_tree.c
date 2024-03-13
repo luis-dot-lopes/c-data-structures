@@ -220,7 +220,7 @@ draw_subtree(int x,
   }
 
   char buffer[20];
-  itoa(node->value, buffer, 10);
+  snprintf(buffer, 20, "%d", node->value);
   int text_offset = MeasureText(buffer, 12);
   DrawText(buffer, x - text_offset / 2, y - 2, 12, WHITE);
 

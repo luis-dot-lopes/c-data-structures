@@ -1,5 +1,6 @@
 #include <raylib.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 typedef struct tree
 {
@@ -68,7 +69,7 @@ draw_tree(int x, int y, int radius, int width, int y_offset, Tree* tree)
 
   DrawCircle(x, y, radius, LIGHTGRAY);
   char buffer[20];
-  itoa(tree->value, buffer, 10);
+  snprintf(buffer, 20, "%d", tree->value);
   int text_offset = MeasureText(buffer, 12);
   DrawText(buffer, x - text_offset / 2, y - 2, 12, BLACK);
 
