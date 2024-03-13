@@ -22,3 +22,6 @@ Algorithms implemented:
 - Insertion Sort
 - Selection Sort
 - Heapsort
+
+Visualizations of the tree data structures were implemented
+using [raylib](https://raylib.com)
