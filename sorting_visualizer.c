@@ -5,14 +5,21 @@
 
 typedef struct
 {
+  size_t (*comps)[2];
+  size_t num_comps;
+  size_t cap_comps;
+} Comparisons;
+
+typedef struct
+{
   int** states;
   size_t num_states;
   size_t cap_states;
   size_t size_state;
-} Animation;
+} Swaps;
 
 void
-add_state(Animation* a, int* state)
+add_state(Swaps* a, int* state)
 {
   int* new_state = malloc(sizeof(state[0]) * a->size_state);
   memcpy(new_state, state, sizeof(state[0]) * a->size_state);
@@ -23,29 +30,75 @@ add_state(Animation* a, int* state)
   a->states[a->num_states++] = new_state;
 }
 
-Animation
-insertion_sort(int* arr, size_t arr_len)
+void
+add_comp(Comparisons* cs, size_t i, size_t j)
 {
-  Animation a = { 0 };
-  a.size_state = arr_len;
-  a.cap_states = arr_len;
-  a.num_states = 0;
-  a.states = malloc(sizeof(a.states[0]) * a.cap_states);
+  if (cs->num_comps == cs->cap_comps) {
+    cs->cap_comps *= 2;
+    cs->comps = realloc(cs->comps, cs->cap_comps * sizeof(cs->comps[0]));
+  }
+  cs->comps[cs->num_comps][0] = i;
+  cs->comps[cs->num_comps++][1] = j;
+}
 
-  add_state(&a, arr);
+void
+insertion_sort(int* arr, size_t arr_len, Swaps* a, Comparisons* cs)
+{
+  a->size_state = arr_len;
+  a->cap_states = arr_len;
+  a->num_states = 0;
+  a->states = malloc(sizeof(a->states[0]) * a->cap_states);
+
+  cs->cap_comps = 1;
+  cs->num_comps = 0;
+  cs->comps = malloc(sizeof(cs->comps[0]) * cs->cap_comps);
+
+  add_state(a, arr);
+  add_comp(cs, arr_len, arr_len);
 
   for (size_t i = 1; i < arr_len; ++i) {
     int key = arr[i];
     size_t j = i;
-    for (; j-- > 0 && arr[j] > key;)
-      ;
+    for (; j-- > 0 && arr[j] > key;) {
+      add_state(a, arr);
+      add_comp(cs, j, i);
+    }
     memcpy(&arr[j + 2], &arr[j + 1], sizeof(int) * (i - j - 1));
     arr[j + 1] = key;
 
-    add_state(&a, arr);
+    add_state(a, arr);
+    add_comp(cs, arr_len, arr_len);
   }
+}
 
-  return a;
+void
+bubble_sort(int* arr, size_t arr_len, Swaps* a, Comparisons* cs)
+{
+  a->size_state = arr_len;
+  a->cap_states = arr_len;
+  a->num_states = 0;
+  a->states = malloc(sizeof(a->states[0]) * a->cap_states);
+
+  cs->cap_comps = 1;
+  cs->num_comps = 0;
+  cs->comps = malloc(sizeof(cs->comps[0]) * cs->cap_comps);
+
+  add_state(a, arr);
+  add_comp(cs, arr_len, arr_len);
+
+  for (size_t i = 0; i < arr_len - 1; ++i) {
+    for (size_t j = i + 1; j < arr_len; ++j) {
+      add_state(a, arr);
+      add_comp(cs, i, j);
+      if (arr[i] > arr[j]) {
+        int tmp = arr[i];
+        arr[i] = arr[j];
+        arr[j] = tmp;
+      }
+      add_state(a, arr);
+      add_comp(cs, arr_len, arr_len);
+    }
+  }
 }
 
 void
@@ -83,19 +136,22 @@ main(void)
 
   SetTargetFPS(60);
 
-  Animation a = insertion_sort(values, value_count);
+  Swaps a = { 0 };
+  Comparisons cs = { 0 };
+  bubble_sort(values, value_count, &a, &cs);
 
   while (!WindowShouldClose()) {
+
+    size_t c1 = cs.comps[j][0], c2 = cs.comps[j][1];
 
     if (IsKeyPressed(KEY_N) && j < a.num_states - 1) {
       ++j;
       TraceLog(LOG_INFO, "Next state %d", j);
-      print_arr(a.states[j], a.size_state);
-
+      TraceLog(LOG_INFO, "Comparing %d and %d", c1, c2);
     } else if (IsKeyPressed(KEY_P) && j > 0) {
       --j;
       TraceLog(LOG_INFO, "Previous state %d", j);
-      print_arr(a.states[j], a.size_state);
+      TraceLog(LOG_INFO, "Comparing %d and %d", c1, c2);
     }
 
     BeginDrawing();
@@ -107,7 +163,7 @@ main(void)
                       base - a.states[j][i] * height_unit,
                       rect_width,
                       height_unit * a.states[j][i],
-                      WHITE);
+                      (c1 == i || c2 == i) ? RED : WHITE);
       }
     }
     EndDrawing();
