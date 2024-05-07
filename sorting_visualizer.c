@@ -5,98 +5,102 @@
 
 typedef struct
 {
-  size_t (*comps)[2];
-  size_t num_comps;
-  size_t cap_comps;
-} Comparisons;
+  size_t i;
+  size_t j;
+} Comp;
 
 typedef struct
 {
-  int** states;
-  size_t num_states;
-  size_t cap_states;
+  int* new_state;
   size_t size_state;
-} Swaps;
+} Change;
+
+union step_type
+{
+  Comp comp;
+  Change change;
+};
+
+enum step_tag
+{
+  COMP,
+  CHANGE
+};
+
+typedef struct
+{
+  enum step_tag tag;
+  union step_type type;
+} Step;
+
+typedef struct
+{
+  Step* items;
+  size_t size;
+  size_t cap;
+} Steps;
 
 void
-add_state(Swaps* a, int* state)
+add_change(Steps* steps, int* state, size_t size)
 {
-  int* new_state = malloc(sizeof(state[0]) * a->size_state);
-  memcpy(new_state, state, sizeof(state[0]) * a->size_state);
-  if (a->num_states == a->cap_states) {
-    a->cap_states *= 2;
-    a->states = realloc(a->states, a->cap_states * sizeof(a->states[0]));
+  Change change = { 0 };
+  change.size_state = size;
+  int* new_state = malloc(sizeof(state[0]) * size);
+  memcpy(new_state, state, sizeof(state[0]) * size);
+  change.new_state = new_state;
+  if (steps->size == steps->cap) {
+    steps->cap = 2 * steps->cap + 1;
+    steps->items = realloc(steps->items, steps->cap * sizeof(steps->items[0]));
   }
-  a->states[a->num_states++] = new_state;
+  steps->items[steps->size].tag = CHANGE;
+  steps->items[steps->size++].type.change = change;
 }
 
 void
-add_comp(Comparisons* cs, size_t i, size_t j)
+add_comp(Steps* steps, size_t i, size_t j)
 {
-  if (cs->num_comps == cs->cap_comps) {
-    cs->cap_comps *= 2;
-    cs->comps = realloc(cs->comps, cs->cap_comps * sizeof(cs->comps[0]));
+  Comp comp = { .i = i, .j = j };
+  if (steps->size == steps->cap) {
+    steps->cap = 2 * steps->cap + 1;
+    steps->items = realloc(steps->items, steps->cap * sizeof(steps->items[0]));
   }
-  cs->comps[cs->num_comps][0] = i;
-  cs->comps[cs->num_comps++][1] = j;
+  steps->items[steps->size].tag = COMP;
+  steps->items[steps->size++].type.comp = comp;
 }
 
 void
-insertion_sort(int* arr, size_t arr_len, Swaps* a, Comparisons* cs)
+insertion_sort(int* arr, size_t arr_len, Steps* steps)
 {
-  a->size_state = arr_len;
-  a->cap_states = arr_len;
-  a->num_states = 0;
-  a->states = malloc(sizeof(a->states[0]) * a->cap_states);
 
-  cs->cap_comps = 1;
-  cs->num_comps = 0;
-  cs->comps = malloc(sizeof(cs->comps[0]) * cs->cap_comps);
-
-  add_state(a, arr);
-  add_comp(cs, arr_len, arr_len);
+  add_change(steps, arr, arr_len);
 
   for (size_t i = 1; i < arr_len; ++i) {
     int key = arr[i];
     size_t j = i;
     for (; j-- > 0 && arr[j] > key;) {
-      add_state(a, arr);
-      add_comp(cs, j, i);
+      add_comp(steps, j, i);
     }
     memcpy(&arr[j + 2], &arr[j + 1], sizeof(int) * (i - j - 1));
     arr[j + 1] = key;
 
-    add_state(a, arr);
-    add_comp(cs, arr_len, arr_len);
+    add_change(steps, arr, arr_len);
   }
 }
 
 void
-bubble_sort(int* arr, size_t arr_len, Swaps* a, Comparisons* cs)
+bubble_sort(int* arr, size_t arr_len, Steps* steps)
 {
-  a->size_state = arr_len;
-  a->cap_states = arr_len;
-  a->num_states = 0;
-  a->states = malloc(sizeof(a->states[0]) * a->cap_states);
-
-  cs->cap_comps = 1;
-  cs->num_comps = 0;
-  cs->comps = malloc(sizeof(cs->comps[0]) * cs->cap_comps);
-
-  add_state(a, arr);
-  add_comp(cs, arr_len, arr_len);
+  add_change(steps, arr, arr_len);
 
   for (size_t i = 0; i < arr_len - 1; ++i) {
     for (size_t j = i + 1; j < arr_len; ++j) {
-      add_state(a, arr);
-      add_comp(cs, i, j);
+      add_comp(steps, i, j);
       if (arr[i] > arr[j]) {
         int tmp = arr[i];
         arr[i] = arr[j];
         arr[j] = tmp;
+        add_change(steps, arr, arr_len);
       }
-      add_state(a, arr);
-      add_comp(cs, arr_len, arr_len);
     }
   }
 }
@@ -124,7 +128,7 @@ main(void)
   const int margin = 100;
   const int base = screen_height * 2 / 3;
 
-  int values[] = { 7, 6, 5, 4, 3, 2, 1 };
+  int values[] = { 1, 2, 6, 5, 3, 4, 7 };
   size_t value_count = sizeof(values) / sizeof(values[0]);
 
   const int start_x =
@@ -136,33 +140,49 @@ main(void)
 
   SetTargetFPS(60);
 
-  Swaps a = { 0 };
-  Comparisons cs = { 0 };
-  bubble_sort(values, value_count, &a, &cs);
+  Steps steps = { 0 };
+  bubble_sort(values, value_count, &steps);
+
+  int* to_display = NULL;
+  size_t to_display_size = 0;
 
   while (!WindowShouldClose()) {
 
-    size_t c1 = cs.comps[j][0], c2 = cs.comps[j][1];
-
-    if (IsKeyPressed(KEY_N) && j < a.num_states - 1) {
+    if (IsKeyPressed(KEY_N) && j < steps.size - 1) {
       ++j;
-      TraceLog(LOG_INFO, "Next state %d", j);
-      TraceLog(LOG_INFO, "Comparing %d and %d", c1, c2);
+      TraceLog(LOG_INFO, "Next state %d, %d", j, steps.items[j].tag);
     } else if (IsKeyPressed(KEY_P) && j > 0) {
       --j;
-      TraceLog(LOG_INFO, "Previous state %d", j);
-      TraceLog(LOG_INFO, "Comparing %d and %d", c1, c2);
+      TraceLog(LOG_INFO, "Previous state %d, %d", j, steps.items[j].tag);
     }
 
     BeginDrawing();
     {
       ClearBackground(BLACK);
 
-      for (size_t i = 0; i < a.size_state; ++i) {
+      size_t c1 = to_display_size, c2 = to_display_size;
+      if (steps.items[j].tag == CHANGE) {
+        Change change = steps.items[j].type.change;
+        if (to_display == NULL || to_display_size < change.size_state) {
+          to_display_size = change.size_state;
+          if (to_display != NULL) {
+            free(to_display);
+          }
+          to_display = malloc(sizeof(to_display[0]) * to_display_size);
+        }
+        memcpy(to_display,
+               change.new_state,
+               to_display_size * sizeof(to_display[0]));
+      } else if (steps.items[j].tag == COMP) {
+        Comp comp = steps.items[j].type.comp;
+        c1 = comp.i, c2 = comp.j;
+      }
+
+      for (size_t i = 0; i < to_display_size; ++i) {
         DrawRectangle(start_x + (rect_width + padding) * i,
-                      base - a.states[j][i] * height_unit,
+                      base - to_display[i] * height_unit,
                       rect_width,
-                      height_unit * a.states[j][i],
+                      height_unit * to_display[i],
                       (c1 == i || c2 == i) ? RED : WHITE);
       }
     }
