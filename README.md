@@ -23,5 +23,6 @@ Algorithms implemented:
 - Selection Sort
 - Heapsort
 
-Visualizations of the tree data structures were implemented
+Visualizations of the tree data structures and some
+sorting algorithms were implemented
 using [raylib](https://raylib.com)
