@@ -194,6 +194,127 @@ insert_key(RBTree* tree, int value)
 }
 
 void
+transplant(RBTree* tree, Node* u, Node* v)
+{
+  if (u->parent == tree->null) {
+    tree->root = v;
+  } else if (u == u->parent->left) {
+    u->parent->left = v;
+  } else {
+    u->parent->right = v;
+  }
+  v->parent = u->parent;
+}
+
+Node*
+minimum(RBTree* tree, Node* x)
+{
+  while (x->left != tree->null) {
+    x = x->left;
+  }
+  return x;
+}
+
+Node*
+successor(RBTree* tree, Node* x)
+{
+  if (x->right != tree->null) {
+    return minimum(tree, x->right);
+  }
+  Node* y = x->parent;
+  while (y != tree->null && x == y->right) {
+    x = y;
+    y = x->parent;
+  }
+  return y;
+}
+
+void
+fix_delete(RBTree* tree, Node* x)
+{
+  while (x != tree->root && x->color == B) {
+    if (x == x->parent->left) {
+      Node* w = x->parent->right;
+      if (w->color == R) {
+        w->color = B;
+        x->parent->color = R;
+        left_rotation(tree, x->parent);
+        w = x->parent->right;
+      }
+      if (w->left->color == w->right->color && w->right->color == B) {
+        w->color = R;
+        x = x->parent;
+      } else if (w->right->color == B) {
+        w->left->color = B;
+        w->color = R;
+        right_rotation(tree, x->parent);
+        w = x->parent->right;
+
+        w->color = x->parent->color;
+        x->parent->color = B;
+        w->right->color = B;
+        left_rotation(tree, x->parent);
+        x = tree->root;
+      }
+    } else {
+      Node* w = x->parent->left;
+      if (w->color == R) {
+        w->color = B;
+        x->parent->color = R;
+        right_rotation(tree, x->parent);
+        w = x->parent->left;
+      }
+      if (w->right->color == w->left->color && w->left->color == B) {
+        w->color = R;
+        x = x->parent;
+      } else if (w->left->color == B) {
+        w->right->color = B;
+        w->color = R;
+        left_rotation(tree, x->parent);
+        w = x->parent->left;
+
+        w->color = x->parent->color;
+        x->parent->color = B;
+        w->left->color = B;
+        right_rotation(tree, x->parent);
+        x = tree->root;
+      }
+    }
+  }
+  x->color = B;
+}
+
+void
+delete_node(RBTree* tree, Node* z)
+{
+  Node* y = z;
+  Node* x;
+  int original_y_color = y->color;
+  if (z->left == tree->null) {
+    x = z->right;
+    transplant(tree, z, x);
+  } else if (z->right == tree->null) {
+    x = z->left;
+    transplant(tree, z, x);
+  } else {
+    y = successor(tree, z);
+    x = y->right;
+    original_y_color = y->color;
+    transplant(tree, y, x);
+    y->left = z->left;
+    z->left->parent = y;
+    y->right = z->right;
+    z->right->parent = y;
+    transplant(tree, z, y);
+    y->color = z->color;
+  }
+
+  if (original_y_color == B) {
+    fix_delete(tree, x);
+  }
+}
+
+void
 draw_subtree(int x,
              int y,
              int radius,
@@ -256,6 +377,8 @@ main(void)
   insert_key(tree, 4);
   insert_key(tree, 5);
   insert_key(tree, 6);
+
+  delete_node(tree, search_key(tree, 4));
 
   const int screen_width = 800;
   const int screen_height = 600;
